@@ -1,0 +1,197 @@
+//// main-1.c
+//// Runs on MSP432
+//// Only SW1 makes LED yellow
+//// Only SW2 makes LED light blue
+//// Both SW1 and SW2 makes LED white
+//// Neither SW1 or SW2 makes LED green
+//// Neither SW1 or SW2 turns LEDs off
+//
+//// Mark Hofmeister
+//// 1/22/2023
+//
+//// negative logic built-in Button 1 connected to P1.1
+//// negative logic built-in Button 2 connected to P1.4
+//// built-in red LED connected to P2.0
+//// built-in green LED connected to P2.1
+//// built-in blue LED connected to P2.2
+//// Color    LED(s) Port2
+//// dark     ---    0
+//// red      R--    0x01
+//// blue     --B    0x04
+//// green    -G-    0x02
+//// yellow   RG-    0x03
+//// sky blue -GB    0x06
+//// white    RGB    0x07
+//// pink     R-B    0x05
+//
+//#include <stdint.h>
+//#include "msp.h"
+//
+//
+//void Port3_Init(void){
+//
+//  P3->SEL0 &= ~0x0C;
+//  P3->SEL1 &= ~0x0C;   // Configure P3.2  P3.3 as GPIO
+//  P3->DIR &= ~0x0C;    // Make P3.2 and P3.3 in
+//  P3->REN &= ~0x0C;    // Disable pull resistors on P3.2 and P3.3
+//
+//}
+//
+//void Port6_Init(void){
+//
+//  P6->SEL0 &= ~0x0C;
+//  P6->SEL1 &= ~0x0C;   // Configure P6.2  P6.3 as GPIO
+//  P6->DIR |= 0x0C;    // Make P6.2 and P6.3 outputs
+//  P6->REN &= ~0x0C;    // Disable pull resistors on P3.2 and P3.3
+//
+//  P6->OUT &= ~0x0C;     //    all output pins off
+//}
+//
+//uint8_t Port3_Input(void){
+//  return (P3->IN&0x0C);   // read P3.2,P3.3 inputs
+//}
+//
+//void Port6_Output(uint8_t data){  // write output bits of P6
+//  P6->OUT = (P2->OUT&0xF3)|data;
+//}
+//
+//int main(void){ uint8_t status;
+//
+//  Port3_Init();                    // initialize P1.1 and P1.4 and make them inputs (P1.1 and P1.4 built-in buttons)
+//
+//  Port6_Init();                    // initialize P2.2-P2.0 and make them outputs (P2.2-P2.0 built-in LEDs)
+//
+//  while(1){
+//
+//    status = Port3_Input();         //Retrieve switch status from port 1 input (SW1 and SW2)
+//
+//    switch(status){                 // switches are negative logic on P1.1 and P1.4
+//
+//      case 0x08:                    // SW0 pressed
+//        Port6_Output(0x08);
+//        break;
+//      case 0x04:                    // SW0 pressed
+//        Port6_Output(0x04);
+//        break;
+//      case 0x00:                    // both switches pressed
+//        Port6_Output(0x0C);
+//        break;
+//      case 0x0C:                    // neither switch pressed
+//        Port6_Output(0x00);
+//        break;
+//
+//    }
+//
+//  }
+//
+//}
+
+
+/*
+ * InputOutput_external.c
+ *
+ *  Created on: Jan 23, 2024
+ *      Author: adambrower
+ */
+
+
+#include <stdint.h>
+#include "msp.h"
+
+#define SW1       0x02                  // on the left side of the LaunchPad board
+#define SW2       0x10                  // on the right side of the LaunchPad board
+#define RED       0x01
+#define GREEN     0x02
+#define BLUE      0x04
+
+void Port3_Init(void){
+
+  P3->SEL0 &= ~0x0C;
+  P3->SEL1 &= ~0x0C;   // Configure P3.2  P3.3 as GPIO
+  P3->DIR &= ~0x0C;    // Make P3.2 and P3.3 in
+  P3->REN &= ~0x0C;    // Disable pull resistors on P3.2 and P3.3
+
+}
+
+uint8_t Port3_Input(void){
+  return (P3->IN&0x0C);   // read P3.2,P3.3 inputs
+}
+
+void Port1_Init(void){
+    P1->DIR |= 0x01;     // 2) make P1.0 out
+}
+
+void Port4_Init(void){
+    P4->SEL0 &= ~0x12;
+    P4->SEL1 &= ~0x12;   // 1) configure P4.4  P4.1 as GPIO
+    P4->DIR &= ~0x12;    // 2) make P4.4 and P4.1 in
+    P4->REN |= 0x00;     // 3) enable pull resistors on P1.4 and P1.1
+    P4->OUT &= ~0x12;     //    P1.4 and P1.1 are pull-down
+}
+
+uint8_t Port4_Input(void){
+  return (P4->IN&0x12);   // read P4.4,P4.1 inputs
+}
+
+void Port1_Output(uint8_t data){  // write output to P1.0
+  P1->OUT = (P1->OUT&0xFE)|data;
+}
+
+void Port6_Init(void){
+    P6->SEL0 &= ~0x073;
+    P6->SEL1 &= ~0x03;    // 1) configure P6.1 P6.0 as GPIO
+    P6->DIR |= 0x03;      // 2) make P6.1 P6.0 out
+    P6->DS |= 0x03;       // 3) activate increased drive strength
+    P6->OUT &= ~0x03;     //    all LEDs off
+}
+
+void Port6_Output(uint8_t data){  // write three outputs bits of P6
+  P6->OUT = (P6->OUT&0xF8)|data;
+}
+
+void Port2_Init(void){
+    P2->SEL0 &= ~0x07;
+    P2->SEL1 &= ~0x07;    // 1) configure P2.2-P2.0 as GPIO
+    P2->DIR |= 0x07;      // 2) make P2.2-P2.0 out
+    P2->DS |= 0x07;       // 3) activate increased drive strength
+    P2->OUT &= ~0x07;     //    all LEDs off
+}
+
+void Port2_Output(uint8_t data){  // write three outputs bits of P2
+  P2->OUT = (P2->OUT&0xF8)|data;
+}
+
+int main(void){
+    uint8_t status;
+    Port4_Init();                    // initialize P4.1 and P1.4 and make them inputs (P4.1 and P4.4 built-in buttons)
+
+    Port6_Init();                    // initialize P6.1 P6.0 and make them outputs (P6.1 P6.0 built-in LEDs)
+
+    Port3_Init();
+
+    Port2_Init();
+    Port1_Init();
+
+
+    while(1){
+        status = Port4_Input();
+        switch(status){                 // switches are negative logic on P4.1 and P4.4
+            case 0x10:                    // SW1 pressed
+                Port2_Output(RED+GREEN);
+                Port1_Output(1);
+                break;
+            case 0x02:                    // SW2 pressed
+                Port2_Output(GREEN+BLUE);
+                Port1_Output(0);
+                break;
+            case 0x12:                    // both switches pressed
+                Port2_Output(RED+GREEN+BLUE);
+                Port1_Output(1);
+                break;
+            case 0x00:                    // neither switch pressed
+                Port2_Output(GREEN);
+                Port1_Output(0);
+                break;
+        }
+    }
+}

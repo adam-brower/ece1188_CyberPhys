@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;InputOutput_external/InPutOutput_external.c&apos; to &apos;InputOutput_external.c&apos;" description="Rename resource &apos;InPutOutput_external.c&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="InPutOutput_external.c" name="InputOutput_external.c" stamp="1706027171165" updateReferences="true"/>
+</session>
